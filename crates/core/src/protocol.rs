@@ -71,6 +71,12 @@ pub enum ClientMessage {
         choice: u8,
         elapsed_ms: u32,
     },
+    /// Host opens a question (host-only; enforced by the WS/Biscuit layer).
+    PushQuestion {
+        question: Question,
+    },
+    /// Host reveals answers and the leaderboard (host-only).
+    Reveal,
     Ping,
 }
 
