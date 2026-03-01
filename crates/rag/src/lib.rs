@@ -6,4 +6,5 @@
 //! (P1c) build on this seam — keeping the product decoupled from any single AI
 //! vendor.
 
+pub mod corpus;
 pub mod provider;

@@ -14,6 +14,7 @@ async-trait.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 reqwest.workspace = true
+sqlx = { version = "0.9.0", default-features = false, features = ["postgres", "runtime-tokio", "tls-rustls"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt", "macros"] }
