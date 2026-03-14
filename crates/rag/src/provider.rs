@@ -25,6 +25,11 @@ pub trait AiProvider: Send + Sync {
     async fn embed(&self, texts: &[String]) -> Result<Vec<Vec<f32>>, AiError>;
     /// Chat completion: a system prompt + a user prompt → the assistant's text.
     async fn complete(&self, system: &str, user: &str) -> Result<String, AiError>;
+    /// Chat completion that asks for a JSON-object response (structured output).
+    /// Defaults to [`Self::complete`]; HTTP providers set `response_format`.
+    async fn complete_json(&self, system: &str, user: &str) -> Result<String, AiError> {
+        self.complete(system, user).await
+    }
 }
 
 /// A client for any OpenAI-compatible endpoint (Clever AI, Mistral, …).
@@ -33,6 +38,9 @@ pub struct OpenAiCompatible {
     api_key: String,
     embed_model: String,
     chat_model: String,
+    /// Request `response_format: json_object` on JSON completions. On by default;
+    /// disable (`AI_JSON_MODE=0`) for endpoints that reject the field.
+    json_mode: bool,
     http: reqwest::Client,
 }
 
@@ -48,19 +56,64 @@ impl OpenAiCompatible {
             api_key: api_key.into(),
             embed_model: embed_model.into(),
             chat_model: chat_model.into(),
+            json_mode: true,
             http: reqwest::Client::new(),
         }
     }
 
-    /// Build from env: `AI_BASE_URL`, `AI_API_KEY`, and optional
-    /// `AI_EMBED_MODEL` / `AI_CHAT_MODEL`. The key never appears in logs.
+    /// Build from env: `AI_BASE_URL`, `AI_API_KEY`, optional `AI_EMBED_MODEL` /
+    /// `AI_CHAT_MODEL`, and optional `AI_JSON_MODE` (`0`/`false` to disable JSON
+    /// mode). The key never appears in logs.
     pub fn from_env() -> Result<Self, AiError> {
         let base = std::env::var("AI_BASE_URL").map_err(|_| AiError("set AI_BASE_URL".into()))?;
         let key = std::env::var("AI_API_KEY").map_err(|_| AiError("set AI_API_KEY".into()))?;
         let embed =
             std::env::var("AI_EMBED_MODEL").unwrap_or_else(|_| "text-embedding-3-small".into());
         let chat = std::env::var("AI_CHAT_MODEL").unwrap_or_else(|_| "gpt-4o-mini".into());
-        Ok(Self::new(base, key, embed, chat))
+        let mut provider = Self::new(base, key, embed, chat);
+        provider.json_mode = !matches!(
+            std::env::var("AI_JSON_MODE").as_deref(),
+            Ok("0") | Ok("false") | Ok("no")
+        );
+        Ok(provider)
+    }
+
+    async fn chat(&self, system: &str, user: &str, json_object: bool) -> Result<String, AiError> {
+        let response_format = json_object.then_some(ResponseFormat {
+            kind: "json_object",
+        });
+        let response: ChatResponse = self
+            .http
+            .post(format!("{}/v1/chat/completions", self.base_url))
+            .bearer_auth(&self.api_key)
+            .json(&ChatRequest {
+                model: &self.chat_model,
+                messages: vec![
+                    ChatMessage {
+                        role: "system",
+                        content: system,
+                    },
+                    ChatMessage {
+                        role: "user",
+                        content: user,
+                    },
+                ],
+                response_format,
+            })
+            .send()
+            .await
+            .map_err(|e| AiError(e.to_string()))?
+            .error_for_status()
+            .map_err(|e| AiError(e.to_string()))?
+            .json()
+            .await
+            .map_err(|e| AiError(e.to_string()))?;
+        response
+            .choices
+            .into_iter()
+            .next()
+            .map(|c| c.message.content)
+            .ok_or_else(|| AiError("no choices returned".into()))
     }
 }
 
@@ -84,6 +137,14 @@ struct EmbedDatum {
 struct ChatRequest<'a> {
     model: &'a str,
     messages: Vec<ChatMessage<'a>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response_format: Option<ResponseFormat>,
+}
+
+#[derive(Serialize)]
+struct ResponseFormat {
+    #[serde(rename = "type")]
+    kind: &'static str,
 }
 
 #[derive(Serialize)]
@@ -130,37 +191,11 @@ impl AiProvider for OpenAiCompatible {
     }
 
     async fn complete(&self, system: &str, user: &str) -> Result<String, AiError> {
-        let response: ChatResponse = self
-            .http
-            .post(format!("{}/v1/chat/completions", self.base_url))
-            .bearer_auth(&self.api_key)
-            .json(&ChatRequest {
-                model: &self.chat_model,
-                messages: vec![
-                    ChatMessage {
-                        role: "system",
-                        content: system,
-                    },
-                    ChatMessage {
-                        role: "user",
-                        content: user,
-                    },
-                ],
-            })
-            .send()
-            .await
-            .map_err(|e| AiError(e.to_string()))?
-            .error_for_status()
-            .map_err(|e| AiError(e.to_string()))?
-            .json()
-            .await
-            .map_err(|e| AiError(e.to_string()))?;
-        response
-            .choices
-            .into_iter()
-            .next()
-            .map(|c| c.message.content)
-            .ok_or_else(|| AiError("no choices returned".into()))
+        self.chat(system, user, false).await
+    }
+
+    async fn complete_json(&self, system: &str, user: &str) -> Result<String, AiError> {
+        self.chat(system, user, self.json_mode).await
     }
 }
 
