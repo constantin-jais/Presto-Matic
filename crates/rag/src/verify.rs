@@ -64,13 +64,22 @@ pub async fn verify_grounding(
         "Source:\n{source_text}\n\nQuestion: {question_text}\nMarked correct answer: {correct}",
         question_text = question.text,
     );
-    let raw = provider.complete(SYSTEM, &user).await?;
-    let parsed: RawVerdict = serde_json::from_str(extract_json(&raw))
-        .map_err(|e| VerifyError(format!("invalid verdict JSON: {e}")))?;
-    Ok(GroundingVerdict {
-        supported: parsed.supported,
-        reason: parsed.reason,
-    })
+    let mut last_parse_error = String::from("no completion attempt");
+    for _ in 0..2 {
+        let raw = provider.complete_json(SYSTEM, &user).await?;
+        match serde_json::from_str::<RawVerdict>(extract_json(&raw)) {
+            Ok(parsed) => {
+                return Ok(GroundingVerdict {
+                    supported: parsed.supported,
+                    reason: parsed.reason,
+                });
+            }
+            Err(e) => last_parse_error = e.to_string(),
+        }
+    }
+    Err(VerifyError(format!(
+        "invalid verdict JSON: {last_parse_error}"
+    )))
 }
 
 #[cfg(test)]
