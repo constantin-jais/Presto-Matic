@@ -20,7 +20,7 @@ The target below is the full P4. It is **not** built at once — the wedge (pers
 - **Increment 2 — Durable collaboration:**
   durable membership + roles (viewer→admin), idempotent upsert; revocation (short TTL + tightened recheck + fanout cache invalidation); audit of sensitive actions; role/ownership policy + transfer + orphan-owner rule.
 - **Increment 3 — Rich invitation & governance:**
-  capability-links (anonymous multi-use + invite-to-register single-use CAS); bounded delegation; identity resolution (invite-link default, Keycloak directory optional); quotas, notifications; corpus `space_id` scoping (coordinated with P1); transport hardening derived from SP-B `risk_level`.
+  capability-links (anonymous multi-use + invite-to-register single-use CAS); bounded delegation; identity resolution (invite-link default, Keycloak directory optional); quotas, notifications; corpus `space_id` scoping (coordinated with P1); transport hardening derived from SP-B `confidentiality`.
 
 ## The personal notebook is a single-member space
 
@@ -44,7 +44,7 @@ Not a separate path: a `space` whose only member is the `owner`. On a user's fir
 
 - **Web / PWA:** cookie `HttpOnly; Secure; SameSite=Strict` + server-side **`Sec-Fetch-Site`** check (CSRF).
 - **Tauri desktop:** no browser cookie/CSRF model — token in the native process, sent via `Authorization` header, stored in the OS secure store.
-  Residual theft risk (stolen cookie/token within TTL) → short TTL + sensitive-op recheck. Hardening (Increment 3): DPoP-style proof-of-possession, **scaled to the space `risk_level`** (a "secret" space requires it; an "internal" one does not).
+  Residual theft risk (stolen cookie/token within TTL) → short TTL + sensitive-op recheck. Hardening (Increment 3): DPoP-style proof-of-possession, **scaled to the space `confidentiality`** (a "secret" space requires it; an "internal" one does not).
 
 **Error taxonomy (non-leaky).** `AuthzError { Unauthenticated, Forbidden, NotFound, Revoked, Expired, RateLimited }`. Mapping: `Forbidden | NotFound | Revoked → 404` (uniform); `Unauthenticated | Expired → 401`; `RateLimited → 429`. Errors never carry the token.
 
@@ -166,7 +166,7 @@ Keep: sole-emitter, Ed25519 key, injected-clock minting, authorizer pattern, sel
 
 ## Relation to SP-B
 
-SP-A carries `clearance_org` and scopes documents to a space. SP-B adds signed `confidentiality`/`pii`/`integrity` (third-party blocks), `allow if clearance >= confidentiality`, `pii.special => confidentiality >= confidential`, and `effective_clearance = min(clearance_org, space_grant)`. The SP-A transport hardening (DPoP) keys off SP-B's `risk_level`.
+SP-A carries `clearance_org` and scopes documents to a space. SP-B adds signed `confidentiality`/`pii`/`integrity` (third-party blocks), `allow if clearance >= confidentiality`, `pii.special => confidentiality >= confidential`, and `effective_clearance = min(clearance_org, space_grant)`. The SP-A transport hardening (DPoP) keys off SP-B's `confidentiality`.
 
 ## Testing strategy
 
@@ -176,7 +176,7 @@ Unit (mock `MembershipStore`): space-cap roundtrip; attenuation strictly smaller
 
 - Exact TTL (~15 min) and recheck-cache window (5–10 s) — tune under load.
 - OIDC library (`openidconnect`) — validate against docs.rs; Keycloak discovery/JWKS/PKCE.
-- DPoP token binding scaled to `risk_level` — Increment 3.
+- DPoP token binding scaled to `confidentiality` — Increment 3.
 - Revocation-set storage (Redis vs Postgres).
 - Audit tamper-evidence (hash-chain) for DORA; outbox pattern if audit externalizes.
 - Corpus `space_id` backfill — coordinate with P1/ingestion.
