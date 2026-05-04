@@ -1,0 +1,60 @@
+# Presto-Matic — Design Corpus
+
+The single map of the design documents and how they fit together. Presto-Matic is
+a **sovereign, self-hostable grounded notebook** (personal daily surface) with a
+**live collaborative-quizzing** differentiator (NotebookLM × Kahoot), built in
+Rust. This index keeps the specs coherent: one increment spine, shared
+invariants, and an explicit cross-spec ledger.
+
+## Document map
+
+| Document                                                                                                                   | Concern                                                                           | Status    |
+| -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------- |
+| [`adr/0001-product-architecture-and-boundaries.md`](adr/0001-product-architecture-and-boundaries.md)                       | Product architecture, bricks (P1…P4, Client), the one-way dependency invariant    | Accepted  |
+| [`specs/2026-06-27-presto-matic-design.md`](specs/2026-06-27-presto-matic-design.md)                                       | The product design (wedge, differentiators, live protocol, sovereignty)           | Proposed  |
+| [`specs/2026-06-28-collaborative-spaces-authz-design.md`](specs/2026-06-28-collaborative-spaces-authz-design.md)           | **SP-A** — authorization substrate (OIDC, spaces, membership, Biscuit caps)       | Proposed  |
+| [`specs/2026-06-28-signed-classification-clearance-design.md`](specs/2026-06-28-signed-classification-clearance-design.md) | **SP-B** — signed classification (confidentiality / PII / integrity) + clearance  | Proposed  |
+| [`specs/2026-06-28-frontend-dioxus-design-system-design.md`](specs/2026-06-28-frontend-dioxus-design-system-design.md)     | **SP-C** — all-Rust Dioxus clients + design system (`presto-ui`)                  | Proposed  |
+| [`evolution/2026-06-28-evolution-and-hardening-spec.md`](evolution/2026-06-28-evolution-and-hardening-spec.md)             | Cross-cutting critique + prioritized hardening roadmap (adversarially challenged) | Proposed  |
+| [`plans/2026-06-27-p3-tracer-bullet.md`](plans/2026-06-27-p3-tracer-bullet.md)                                             | The live-session tracer-bullet plan (P3)                                          | Reference |
+| [`deploy/clever-cloud.md`](deploy/clever-cloud.md)                                                                         | Sovereign deployment runbook (Clever Cloud)                                       | Reference |
+
+SP-A/B/C are written as a coherent family (SP-A is the substrate; SP-B classifies
+over it; SP-C consumes both). The evolution spec critiques the **built** product
+(P1–P3 + the four differentiators, already on `main`) and slots its hardening
+work _alongside_ the spec roadmap below.
+
+## The unified increment spine (risk-first, wedge-first)
+
+The specs share one increment cadence. Each column is independently shippable and
+green; nothing builds the rich collaborative layer before the wedge works.
+
+|                                                 | **Increment 1 — Wedge core** (authenticated solo notebook + existing live)                                                                                                                                                                                                  | **Increment 2 — Collaboration** (shared spaces)                                                                                                                   | **Increment 3 — Rich** (governance, native, advanced)                                                                         |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **SP-A** (authz)                                | OIDC (Auth Code + PKCE); solo-space bootstrap; `session→space` generalization; `MembershipStore` (owner-only); token transport; 404 anti-enumeration; anonymous live join-links keep working                                                                                | durable membership + roles; revocation (short TTL + tightened recheck + fanout cache-invalidation); audit of sensitive actions; ownership transfer / orphan-owner | capability-links + bounded delegation; Keycloak directory (optional); quotas; corpus `space_id` scoping (coordinated with P1) |
+| **SP-B** (classification)                       | signed **integrity** hash for the grounding wedge (solo; no access gating)                                                                                                                                                                                                  | manual **confidentiality** gating + retrieval filter + the invitation gate                                                                                        | automatic **PII** detection + hybrid clearance `min(org, grant)` + the **live-generation gate**                               |
+| **SP-C** (front)                                | personal notebook (web/PWA): RAG chat, corpus view/upload, studio; core design system; SP-B confidentiality badges                                                                                                                                                          | `presto-join` guest/join + the live session UI (typed quiz, leaderboard, heatmap, breakouts)                                                                      | Tauri desktop + offline-local RAG; full design system + theming                                                               |
+| **Evolution** (hardening, identity-independent) | **P0/P1** runs here: S1 prompt-injection isolation; A1 reveal pure-function consolidation; Sec2 `deny.toml`+CI; O1 JSON logs; O2 verifier failure signal; Pf1 batch writes; P1a deep `/health`; Prod1 analytics API; GDPR1 session-data delete; Pf2 HNSW index + instrument | O3 multi-round + concurrent store tests; O4 multi-instance load test                                                                                              | measure-gated perf (embedding cache, async ingestion); persistent SRS (needs identity)                                        |
+
+**Reading the spine:** Increment 1 is the only one needed for the wedge. The
+evolution hardening is _not_ gated on identity — most of it (the security/quality
+P0/P1) lands with Increment 1 and protects the product that already exists.
+
+## Shared invariants (every spec honours these)
+
+- **One-way dependency (ADR-0001).** `rag`/P1 and the front/Client **never depend on P4 (authz/classification) as code**. The `Retriever` (`corpus.rs`) _receives_ `space_id` (SP-A) and `max_confidentiality` (SP-B) as **opaque parameters** computed server-side; the ordered `Level` type lives in `presto-core` (transverse). Data flows in; there is no `rag → P4` code edge.
+- **Server-authoritative.** The client renders the caps, state, and clearance it is granted; it never computes score, timing, rights, or clearance. Optimistic UI is allowed; truth comes from the server.
+- **Token-is-not-a-cache.** The Biscuit encodes a capability minted _at access_ from OIDC identity + DB membership; Postgres stays the authority on _current_ membership (the basis of immediate revocation via the fanout-invalidated recheck cache).
+- **Biscuit emitter discipline.** Sole emitter, Ed25519 key shared across instances, injected-clock minting, authorizer policies, `check if time < expiration` self-expiry, errors never carry the token. SP-A generalizes `session→space`; SP-B adds signed third-party blocks (classifier + ingestion keys, independent of the server's trust).
+- **Token transport.** Web/PWA: `HttpOnly; Secure; SameSite=Strict` cookie + `Sec-Fetch-Site` check. Tauri: `Authorization` header + OS secure store. The wasm client never reads the token.
+- **Sovereignty.** OSS licensing only (MIT/Apache/MPL — to be enforced by the evolution `deny.toml` gate), EU residency, no US hyperscaler/gatekeeper, no Doxallia reference in any artifact.
+
+## Cross-spec coherence ledger (open items spanning specs)
+
+Tracked here because no single spec owns them:
+
+1. **Session-engine multi-instance consistency** — unowned by SP-A/B/C (they cover the _auth_ layer's multi-instance story). The session-engine race (two instances creating one session id; a `reveal` racing an in-flight answer across instances) needs a **dedicated ADR**; the evolution `concurrent` test (O3) is the first probe. _(evolution §8.4)_
+2. **The live-generation path carries two sibling security controls.** S1 (prompt-injection — _integrity of the verdict_, identity-independent, evolution §3.1) and SP-B's live-generation gate (_confidentiality of the source_ — audience-ceiling, SP-B inc-3). Both must land before live sessions run over shared or confidential corpora. SP-B's signed integrity hash strengthens but does **not** replace S1.
+3. **Erasure vs grounding** — SP-B open item: a cited-then-erased source — does dependent generated content get invalidated? Coordinate SP-B erasure + SP-A audit + the studio (P2).
+4. **SP-A refinements surfaced by the evolution challenge** (open-item level, not a redesign): (a) state that audit `actor_sub` is pseudonymous and retained under the GDPR Art. 17(3) legal-obligation exception (closes the audit-vs-erasure contradiction explicitly); (b) specify _where_ `RateLimited`/429 applies (OIDC callback, capability-link single-use redemption, login) and connect it to the already-shipped global rate-limit (`ratelimit.rs`, P12).
+5. **Corpus columns are one coordinated change.** `space_id` (SP-A inc-3) and `confidentiality` (SP-B inc-2/3) both land in `corpus.rs` (P1), coordinated with ingestion (P11). The `Retriever` receives both as opaque params in a single migration — not two separate authz-driven edits.
