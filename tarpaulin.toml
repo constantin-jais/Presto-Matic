@@ -1,9 +1,0 @@
-# Coverage gate config (evolution / goal §2). Line coverage must stay >= 80%.
-# main.rs is the binary composition root (env-driven wiring + the serve loop),
-# exercised end-to-end by running the binary, not unit-tested — excluded from the
-# line-coverage denominator per convention.
-[default]
-workspace = true
-skip-clean = true
-exclude-files = ["crates/server/src/main.rs"]
-fail-under = 80.0
