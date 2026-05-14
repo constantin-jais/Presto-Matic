@@ -65,6 +65,9 @@ async fn sustains_200_participants_under_200ms_p99() {
     // the most recent reveal-send instant + a channel of per-participant samples.
     let reveal_at: Arc<Mutex<Option<Instant>>> = Arc::new(Mutex::new(None));
     let (rtx, mut rrx) = mpsc::unbounded_channel::<u128>();
+    // Answer-submit latency (§3 SLO): each participant times its own submit ->
+    // its own `answer_received` ack (matched by participant_id on the broadcast).
+    let (atx, mut arx) = mpsc::unbounded_channel::<u128>();
 
     let mut handles = Vec::with_capacity(PARTICIPANTS);
     for i in 0..PARTICIPANTS {
@@ -85,10 +88,13 @@ async fn sustains_200_participants_under_200ms_p99() {
         let tx = tx.clone();
         let reveal_at = reveal_at.clone();
         let rtx = rtx.clone();
+        let atx = atx.clone();
+        let my_pid = pid.clone();
         handles.push(tokio::spawn(async move {
             // Wait until every reveal is seen (reveals follow questions, so this
             // also covers every question delivery).
             let mut reveals = 0usize;
+            let mut submitted_at: Option<Instant> = None;
             let run = async {
                 while reveals < questions {
                     match ws.next().await {
@@ -104,9 +110,17 @@ async fn sustains_200_participants_under_200ms_p99() {
                                         question_id: qid,
                                         choices: vec![0],
                                     };
+                                    submitted_at = Some(Instant::now());
                                     let _ = ws
                                         .send(Message::text(serde_json::to_string(&ans).unwrap()))
                                         .await;
+                                }
+                                Some("answer_received")
+                                    if v["participant_id"] == my_pid.as_str() =>
+                                {
+                                    if let Some(s) = submitted_at.take() {
+                                        let _ = atx.send(s.elapsed().as_micros());
+                                    }
                                 }
                                 Some("answers_revealed") => {
                                     if let Some(at) = *reveal_at.lock().unwrap() {
@@ -155,6 +169,7 @@ async fn sustains_200_participants_under_200ms_p99() {
     }
     drop(tx);
     drop(rtx);
+    drop(atx);
     host_drain.abort();
 
     let mut samples: Vec<u128> = Vec::new();
@@ -167,6 +182,11 @@ async fn sustains_200_participants_under_200ms_p99() {
         reveal_samples.push(s);
     }
     reveal_samples.sort_unstable();
+    let mut ack_samples: Vec<u128> = Vec::new();
+    while let Some(s) = arx.recv().await {
+        ack_samples.push(s);
+    }
+    ack_samples.sort_unstable();
 
     let expected = PARTICIPANTS * questions;
     eprintln!(
@@ -182,6 +202,13 @@ async fn sustains_200_participants_under_200ms_p99() {
         percentile(&reveal_samples, 0.50),
         percentile(&reveal_samples, 0.95),
         percentile(&reveal_samples, 0.99),
+    );
+    eprintln!(
+        "load ack:      got {} | p50={}µs p95={}µs p99={}µs",
+        ack_samples.len(),
+        percentile(&ack_samples, 0.50),
+        percentile(&ack_samples, 0.95),
+        percentile(&ack_samples, 0.99),
     );
 
     // §3 SLO — delivery: zero loss, p99 < 200ms.
@@ -204,6 +231,18 @@ async fn sustains_200_participants_under_200ms_p99() {
     assert!(
         reveal_p99_ms < 500.0,
         "p99 reveal {reveal_p99_ms:.1}ms must be < 500ms"
+    );
+
+    // §3 SLO — answer-submit ack: every participant's submit is acked, p99 < 100ms.
+    assert_eq!(
+        ack_samples.len(),
+        expected,
+        "every participant's answer must be acked"
+    );
+    let ack_p99_ms = percentile(&ack_samples, 0.99) as f64 / 1000.0;
+    assert!(
+        ack_p99_ms < 100.0,
+        "p99 answer-submit ack {ack_p99_ms:.1}ms must be < 100ms"
     );
 }
 
