@@ -12,6 +12,7 @@ pub mod authz;
 pub mod classification;
 pub mod fanout;
 pub mod http;
+pub mod integrity;
 pub mod membership;
 pub mod oidc;
 pub mod postgres_store;
