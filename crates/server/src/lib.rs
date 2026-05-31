@@ -11,6 +11,7 @@ pub mod auth;
 pub mod authz;
 pub mod classification;
 pub mod fanout;
+pub mod flashcard_store;
 pub mod http;
 pub mod integrity;
 pub mod membership;
