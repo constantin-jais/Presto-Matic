@@ -106,4 +106,22 @@ mod tests {
         // HMAC-SHA256 is 32 bytes -> 64 hex chars.
         assert_eq!(sign_content(KEY, CONTENT).len(), 64);
     }
+
+    #[test]
+    fn every_ingested_chunk_gets_a_verifiable_tag() {
+        // The "signed integrity hash present per chunk" property: each chunk a
+        // document is split into (real corpus chunking) receives its own tag that
+        // verifies — none is left unsigned.
+        let chunks = presto_rag::corpus::chunk("doc", "Alpha para.\n\nBeta para.\n\nGamma para.");
+        assert_eq!(chunks.len(), 3);
+        for c in &chunks {
+            let tag = sign_content(KEY, &c.text);
+            assert!(
+                verify_content(KEY, &c.text, &tag),
+                "chunk {} unsigned",
+                c.source_section_id
+            );
+            assert_eq!(tag.len(), 64);
+        }
+    }
 }

@@ -35,6 +35,28 @@ impl PiiVerdict {
     }
 }
 
+/// A deterministic, stable string form of a verdict, used as the signing payload.
+fn verdict_repr(verdict: &PiiVerdict) -> String {
+    verdict
+        .kinds
+        .iter()
+        .map(|k| format!("{k:?}"))
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// Sign a PII verdict with the classifier's OWN key — deliberately *distinct*
+/// from the content-integrity key, so a verdict is attributable to the classifier
+/// and not forgeable by whoever can write content tags. Returns a hex tag.
+pub fn sign_verdict(classifier_key: &[u8], verdict: &PiiVerdict) -> String {
+    crate::integrity::sign_content(classifier_key, &verdict_repr(verdict))
+}
+
+/// Verify a signed PII verdict under the classifier key (constant-time).
+pub fn verify_verdict(classifier_key: &[u8], verdict: &PiiVerdict, tag: &str) -> bool {
+    crate::integrity::verify_content(classifier_key, &verdict_repr(verdict), tag)
+}
+
 /// Detect PII deterministically (no AI): email addresses, IBANs, long national
 /// identifiers, and phone numbers. Conservative and order-stable — it flags
 /// content for review, it does not redact.
@@ -142,5 +164,26 @@ mod tests {
         let t = "Email a@b.co and call 0612345678";
         assert_eq!(classify_pii(t), classify_pii(t));
         assert_eq!(classify_pii(t).kinds, vec![PiiKind::Email, PiiKind::Phone]);
+    }
+
+    #[test]
+    fn pii_verdict_is_signed_with_a_distinct_classifier_key() {
+        let classifier_key = b"pii-classifier-key-v1";
+        let content_key = b"content-integrity-key-v1";
+        let verdict = classify_pii("Contact alice@example.com");
+
+        let tag = sign_verdict(classifier_key, &verdict);
+        assert!(verify_verdict(classifier_key, &verdict, &tag));
+
+        // The classifier key is DISTINCT from the content-integrity key: a verdict
+        // signed by the classifier never verifies under the content key.
+        assert!(
+            !verify_verdict(content_key, &verdict, &tag),
+            "verdict signature must be bound to the distinct classifier key"
+        );
+
+        // A tampered verdict (different kinds) fails.
+        let altered = classify_pii("no personal data here");
+        assert!(!verify_verdict(classifier_key, &altered, &tag));
     }
 }
