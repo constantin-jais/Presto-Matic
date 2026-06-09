@@ -27,6 +27,17 @@ summaries) delivered in **real-time collaborative sessions** (200+ participants)
 Rust · axum / tokio · PostgreSQL + pgvector · Cellar (S3) · Redis / Materia KV ·
 Pulsar · Biscuit auth (+ OIDC / Keycloak) · OpenAI-compatible AI (Clever AI default).
 
+## Companion repositories
+
+Adjacent tooling lives in separate repos so Presto-Matic keeps a tight runtime boundary:
+
+- [`memory-card`](https://github.com/constantin-jais/memory-card) — local agentic context, code map, repo memory.
+- [`disc-loader`](https://github.com/constantin-jais/disc-loader) — Xberg-backed rich document ingestion worker/service.
+- [`vault-inspector`](https://github.com/constantin-jais/vault-inspector) — Scythe-backed SQL audit and Postgres security inspection.
+- [`supply-depot`](https://github.com/constantin-jais/supply-depot) — Starmetal-backed sovereign registry proxy / supply-chain POC.
+
+See [`docs/adr/0003-companion-repositories.md`](docs/adr/0003-companion-repositories.md).
+
 ## License
 
 MIT © Constantin Jais
