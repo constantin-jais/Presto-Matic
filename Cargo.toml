@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/core", "crates/rag", "crates/server"]
+members = ["crates/core", "crates/rag", "crates/server", "crates/ui"]
 
 [workspace.package]
 edition = "2024"
@@ -15,6 +15,8 @@ async-trait = "0.1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 presto-core = { path = "crates/core" }
 presto-rag = { path = "crates/rag" }
+presto-ui = { path = "crates/ui" }
+dioxus = { version = "0.7", default-features = false, features = ["macro", "html", "signals"] }
 
 [profile.release]
 strip = true

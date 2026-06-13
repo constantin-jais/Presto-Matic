@@ -25,8 +25,8 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features
       - name: Test
         run: cargo test --workspace --all-features
-      - name: WASM portability (client core)
-        run: cargo check -p presto-core --target wasm32-unknown-unknown
+      - name: WASM portability (client crates)
+        run: cargo check -p presto-core -p presto-ui --target wasm32-unknown-unknown
 
   supply-chain:
     # Evolution Sec2: OSS-only licensing (ADR-0001) + vulnerability scan, gated.

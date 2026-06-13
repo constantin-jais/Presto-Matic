@@ -1,0 +1,17 @@
+[package]
+name = "presto-ui"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "presto_ui"
+path = "src/lib.rs"
+
+[dependencies]
+dioxus.workspace = true
+presto-core.workspace = true
+
+[dev-dependencies]
+dioxus-ssr = "0.7"
