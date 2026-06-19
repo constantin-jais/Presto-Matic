@@ -1,109 +1,37 @@
-# rumble-lm
+# Rumble LM
 
-> Sovereign, self-hostable collaborative learning platform — **NotebookLM × Kahoot**: AI-generated, source-grounded study content delivered in real-time sessions for 200+ participants.
+**Layer:** Rumble — Product  
+**Role:** sovereign collaborative learning platform  
+**Mission:** help groups learn from source-grounded AI content in reliable, real-time sessions.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Rust 1.95+](https://img.shields.io/badge/Rust-1.95%2B-orange.svg)](https://www.rust-lang.org)
-[![CI](https://github.com/constantin-jais/rumble-lm/actions/workflows/ci.yml/badge.svg)](https://github.com/constantin-jais/rumble-lm/actions/workflows/ci.yml)
+---
 
-> **Status:** `v0.1` — backend/RAG/live-session stable baseline. The live-session tracer bullet is implemented and gated (Biscuit join link, 200 participants, grounded generation, real-time aggregation, leaderboard/load SLOs). Product-complete front, RGPD erasure/audit, and production AI-latency work remain tracked in `docs/`.
+## Purpose
 
-## Why it exists
+`rumble-lm` is the learning product of the ecosystem. It supports collaborative sessions, AI-assisted study content, source grounding, and facilitation for groups.
 
-Study platforms either lock you into a vendor's AI stack or lack live collaboration. `rumble-lm` is self-hostable with your own AI keys, generates study content grounded in your sources (every item is traceable and agentic-verified), and supports real-time sessions — without compromise on data sovereignty or RGPD compliance.
+It is not a generic chat application; the product outcome is learning.
 
-## Ecosystem
+## Owns
 
-```mermaid
-graph TB
-    subgraph products["🎯 Rumble products"]
-        RL["rumble-lm<br/>Collaborative learning platform"]
-        RC["rumble-cos<br/>Public knowledge site"]
-    end
-    subgraph tools["🛠️ Sovereign tooling"]
-        CM["cos-matic<br/>Agent config + autonomous code-ops"]
-        WL["wrench-loader<br/>Document ingestion worker"]
-        GM["gear-memory<br/>Local agent context"]
-    end
-    subgraph infra["⚙️ Infrastructure"]
-        GC["gear-cable<br/>Distribution substrate"]
-        GD["gear-depot<br/>Registry proxy/cache"]
-        VI["vault-inspector<br/>Postgres security audit"]
-    end
-    RL --> WL
-    RL --> GM
-    RL --> VI
-    RL --> GD
-    RL --> GC
-    RC --> RL
-    CM --> GC
-    WL --> GM
-    style RL fill:#dbeafe,stroke:#2563eb,stroke-width:2px
-```
+- Learning session UX and facilitation workflows.
+- Source-grounded study content presentation.
+- Collaboration features for learners and facilitators.
+- Sovereign/BYO-key product experience and RGPD-aware operation.
 
-Adjacent tooling lives in separate repos to keep rumble-lm's runtime boundary tight. See [`docs/adr/0003-companion-repositories.md`](docs/adr/0003-companion-repositories.md).
+## Does Not Own
 
-## Key properties
+- Generic model hosting or provider abstraction as infrastructure.
+- Agentic orchestration internals: belongs to `cos-matic`.
+- Raw ingestion/extraction: belongs to `wrench-loader`.
+- Memory/storage/distribution primitives: belongs to Gear.
 
-- **Sovereign / BYO** — self-host on your own infrastructure with your own AI keys. Defaults to Clever Cloud + Clever AI (EU, RGPD).
-- **Grounded** — every generated item (quiz, flashcard, summary) is traceable to its source and verified by an agentic grounding checker.
-- **Live** — host a session, participants join by link, answer grounded quizzes, watch a real-time leaderboard and comprehension heatmap.
+## Allowed Dependencies
 
-## Architecture
+- Uses Bolt for orchestration when learning workflows need planning or agents.
+- Uses Wrench for document ingestion and validation.
+- Uses Gear for memory, artifact integrity, and reproducible deployment paths.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                        rumble-lm                        │
-├──────────────┬──────────────────┬───────────────────────┤
-│  crates/core │   crates/rag     │    crates/server      │
-│  Protocol    │  Ingestion ·     │  axum HTTP/WS ·       │
-│  API client  │  Retrieval ·     │  Auth (Biscuit/OIDC)  │
-│  WASM        │  Grounded gen ·  │  Session engine ·     │
-│  bindings    │  Verification    │  Fanout · Stores      │
-└──────────────┴──────────────────┴───────────────────────┘
-       │                │                    │
-    UniFFI          pgvector             PostgreSQL
-    WASM             Redis               Pulsar
-                     S3/Cellar
-```
+## Product Vision Challenge
 
-## Quick start
-
-```bash
-# Clone and build
-cargo build --release
-
-# Run backend (requires PostgreSQL, Redis, Pulsar, S3-compatible storage)
-cargo run -p server -- --config config/local.toml
-```
-
-See [`docs/`](docs/) for full setup instructions including Clever Cloud deployment.
-
-## Tech stack
-
-| Component        | Choice                                       |
-| ---------------- | -------------------------------------------- |
-| Language         | Rust 2024, edition MSRV 1.95+                |
-| HTTP / WebSocket | axum + tokio                                 |
-| Database         | PostgreSQL + pgvector                        |
-| Object storage   | S3-compatible (Cellar/Clever Cloud default)  |
-| Messaging        | Pulsar                                       |
-| Cache / KV       | Redis / Materia KV                           |
-| Auth             | Biscuit tokens + OIDC / Keycloak             |
-| AI               | OpenAI-compatible (Clever AI default)        |
-| UI               | Dioxus 0.7 (WASM + native via `crates/core`) |
-
-## Related projects
-
-| Repo                                                                  | Role                                                     |
-| --------------------------------------------------------------------- | -------------------------------------------------------- |
-| [wrench-loader](https://github.com/constantin-jais/wrench-loader)         | Xberg-backed document ingestion worker for RAG           |
-| [gear-memory](https://github.com/constantin-jais/gear-memory)         | Local agent context layer — code map and repo memory     |
-| [vault-inspector](https://github.com/constantin-jais/vault-inspector) | Scythe-backed SQL audit and Postgres security inspection |
-| [gear-depot](https://github.com/constantin-jais/gear-depot)       | Starmetal-backed sovereign registry proxy                |
-| [gear-cable](https://github.com/constantin-jais/gear-cable)           | Multi-platform distribution substrate                    |
-| [cos-matic](https://github.com/constantin-jais/cos-matic)     | Config compiler and autonomous CI/CD orchestrator        |
-
-## License
-
-MIT © Constantin Jais
+`rumble-lm` must be judged by learning outcomes, groundedness, session reliability, and group adoption — not by being yet another LLM chat UI.
