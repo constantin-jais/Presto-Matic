@@ -6,6 +6,15 @@
 
 ---
 
+## Stack Role
+
+- **Maturity:** `contract-first`.
+- **Current increment:** P0 source-grounded contract stub.
+- **Learning value:** pedagogy, citations, live sessions, grounding, aggregate analytics, and bounded delegation.
+- **Next quality step:** define `CitationValidation`, retention defaults, and deployment-specific provider/BYOK policy.
+
+See the ecosystem cockpit in [`constantin-jais/ecosystem/status.md`](https://github.com/constantin-jais/constantin-jais/blob/main/ecosystem/status.md).
+
 ## Purpose
 
 `rumble-lm` combines grounded knowledge work with live group engagement: documents become study material, quizzes, prompts, activities, summaries, and facilitated sessions.
