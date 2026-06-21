@@ -1,19 +1,56 @@
 # Rumble LM
 
+[![CI](https://github.com/constantin-jais/rumble-lm/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/constantin-jais/rumble-lm/actions/workflows/ci.yml)
+[![Security](https://github.com/constantin-jais/rumble-lm/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/constantin-jais/rumble-lm/actions/workflows/security.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Layer:** Rumble — Product  
 **Role:** sovereign learning and facilitation platform  
-**Mission:** help groups learn, discuss, and decide from source-grounded AI content in reliable interactive sessions.
+**Mission:** help groups learn, discuss, and decide from source-grounded AI content in trustworthy interactive sessions.
 
 ---
 
-## Stack Role
+## Stack role
 
+- **Layer:** Rumble — Product.
+- **Role:** sovereign learning and facilitation platform.
+- **Mission:** help groups learn, discuss, and decide from source-grounded AI content in trustworthy interactive sessions.
 - **Maturity:** `contract-first`.
+- **Scale-ready:** no — contracts/stubs validate boundaries before a production runtime or UI.
 - **Current increment:** P0 source-grounded contract stub.
 - **Learning value:** pedagogy, citations, live sessions, grounding, aggregate analytics, and bounded delegation.
 - **Next quality step:** define `CitationValidation`, retention defaults, and deployment-specific provider/BYOK policy.
 
 See the ecosystem cockpit in [`constantin-jais/ecosystem/status.md`](https://github.com/constantin-jais/constantin-jais/blob/main/ecosystem/status.md).
+
+## Dogfooding
+
+This repository is part of the forge dogfooding loop: the ecosystem should use its own tools to make specs, maturity, contracts, releases, and product documentation observable.
+
+Current visible evidence:
+
+- CI and security workflows exercise source-grounded learning-session contracts;
+- README maturity notes keep provider, citation, retention, and UI limits explicit;
+- stubs validate boundaries before hosted or multi-user claims are made.
+
+Expected next evidence:
+
+- publish example session, citation, and grounding outputs;
+- make retention and provider-policy checks visible as fixtures.
+
+Dogfooding claims should stay backed by visible commands, fixtures, CI workflows, generated reports, or linked docs.
+
+## Usable today
+
+The Rust core and server expose contract/stub proofs for source-grounded learning sessions. They are useful to validate boundaries, privacy defaults, delegation limits, and citation workflow assumptions.
+
+## Not scale-ready yet
+
+There is no full product runtime, UI, durable storage, provider policy instantiation, or production citation validation yet.
+
+## Next product milestone
+
+Turn the P0 contract stub into a minimal grounded session workflow with explicit `CitationValidation`, retention defaults, and BYOK/provider policy.
 
 ## Purpose
 
