@@ -256,12 +256,17 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 [[package]]
 name = "presto-core"
 version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "presto-server"
 version = "0.0.0"
 dependencies = [
  "axum",
+ "presto-core",
  "tokio",
  "tower",
 ]
@@ -297,6 +302,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e"
 dependencies = [
  "serde_core",
+ "serde_derive",
 ]
 
 [[package]]

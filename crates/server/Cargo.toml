@@ -5,6 +5,10 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+[lib]
+name = "presto_server"
+path = "src/lib.rs"
+
 [[bin]]
 name = "presto-server"
 path = "src/main.rs"
@@ -12,6 +16,7 @@ path = "src/main.rs"
 [dependencies]
 axum = "0.8.9"
 tokio = { version = "1.52.3", features = ["rt-multi-thread", "net", "macros"] }
+presto-core.workspace = true
 
 [dev-dependencies]
 tower = { version = "0.5.3", features = ["util"] }
