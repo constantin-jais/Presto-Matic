@@ -1376,9 +1376,11 @@ name = "presto-rag"
 version = "0.0.0"
 dependencies = [
  "async-trait",
+ "presto-core",
  "reqwest",
  "serde",
  "serde_json",
+ "sqlx",
  "tokio",
 ]
 
