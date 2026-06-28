@@ -33,3 +33,34 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
+
+  integration:
+    # Real-infra gated tests against live Postgres (pgvector) + Redis service
+    # containers — the multi-instance, store-divergence, and corpus tests that the
+    # default run skips. The AI-gated tests (live_provider, live_rag) self-skip
+    # without an AI endpoint; they stay a manual/local proof.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: presto
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:presto@localhost:5432/postgres
+      REDIS_URL: redis://localhost:6379/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Integration (real Postgres + Redis)
+        run: cargo test --workspace --all-features -- --ignored
