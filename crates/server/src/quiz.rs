@@ -125,18 +125,30 @@ impl FlashcardSource for RagFlashcardSource {
     }
 }
 
+/// Why an ingestion was refused. Separates client-safe document faults from
+/// backend failures whose detail must not leak to an untrusted uploader.
+pub enum IngestRejection {
+    /// The uploaded document is unusable (bad type, encoding, empty). The
+    /// message is safe to return to the client.
+    BadDocument(String),
+    /// No corpus + AI provider is configured on this deployment.
+    NotConfigured,
+    /// A backend failure (database, provider). Detail is logged, never returned.
+    Backend,
+}
+
 /// Ingests an uploaded document into the corpus (parse → chunk → embed → store),
 /// so the RAG question/breakout/flashcard sources can ground on it.
 #[async_trait]
 pub trait DocumentIngestor: Send + Sync {
     /// Ingest `bytes` (typed by `content_type`) under `document_id`; returns the
-    /// number of chunks stored, or a human-readable error.
+    /// number of chunks stored, or a typed rejection.
     async fn ingest(
         &self,
         document_id: &str,
         content_type: &str,
         bytes: &[u8],
-    ) -> Result<usize, String>;
+    ) -> Result<usize, IngestRejection>;
 }
 
 /// Parses the body to text, then ingests it into the pgvector corpus.
@@ -158,12 +170,18 @@ impl DocumentIngestor for RagIngestor {
         document_id: &str,
         content_type: &str,
         bytes: &[u8],
-    ) -> Result<usize, String> {
-        let text = document_text(content_type, bytes).map_err(|e| e.to_string())?;
+    ) -> Result<usize, IngestRejection> {
+        let text = document_text(content_type, bytes)
+            .map_err(|e| IngestRejection::BadDocument(e.to_string()))?;
         self.corpus
             .ingest(document_id, &text, self.provider.as_ref())
             .await
-            .map_err(|e| e.to_string())
+            .map_err(|e| {
+                // Log the detail; return an opaque rejection (no DB internals to
+                // an untrusted uploader).
+                eprintln!("ingest backend error for '{document_id}': {e}");
+                IngestRejection::Backend
+            })
     }
 }
 
@@ -172,9 +190,8 @@ pub struct FixtureIngestor;
 
 #[async_trait]
 impl DocumentIngestor for FixtureIngestor {
-    async fn ingest(&self, _doc: &str, _ct: &str, _bytes: &[u8]) -> Result<usize, String> {
-        Err("ingestion requires a corpus + AI provider (set DATABASE_URL + AI_BASE_URL + AI_API_KEY)"
-            .into())
+    async fn ingest(&self, _doc: &str, _ct: &str, _bytes: &[u8]) -> Result<usize, IngestRejection> {
+        Err(IngestRejection::NotConfigured)
     }
 }
 

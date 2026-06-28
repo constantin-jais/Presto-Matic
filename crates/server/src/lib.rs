@@ -120,20 +120,33 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn ingest_without_corpus_is_rejected() {
-        // The default in-memory state uses FixtureIngestor → no corpus configured.
+    async fn ingest_without_corpus_is_unavailable() {
+        // The default in-memory state uses FixtureIngestor → not configured (503,
+        // not a client error, and no backend detail leaked).
         let status = ingest(
             "/corpus/documents?document_id=doc1",
             "text/markdown",
             "# Hi\n\nBody",
         )
         .await;
-        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
     }
 
     #[tokio::test]
     async fn ingest_requires_a_document_id() {
         let status = ingest("/corpus/documents?document_id=", "text/plain", "x").await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn ingest_rejects_an_overlong_document_id() {
+        let long = "a".repeat(200);
+        let status = ingest(
+            &format!("/corpus/documents?document_id={long}"),
+            "text/plain",
+            "x",
+        )
+        .await;
         assert_eq!(status, StatusCode::BAD_REQUEST);
     }
 }

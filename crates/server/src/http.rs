@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::AppState;
 use crate::auth::Capability;
+use crate::quiz::IngestRejection;
 
 const TOKEN_TTL: Duration = Duration::from_secs(6 * 3600);
 /// Unambiguous alphabet (no 0/O/1/I) for human-typable codes.
@@ -156,6 +157,12 @@ pub(crate) async fn ingest_document(
     if params.document_id.trim().is_empty() {
         return Err((StatusCode::BAD_REQUEST, "document_id is required".into()));
     }
+    if params.document_id.len() > 128 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "document_id too long (max 128 bytes)".into(),
+        ));
+    }
     let content_type = headers
         .get(header::CONTENT_TYPE)
         .and_then(|h| h.to_str().ok())
@@ -164,7 +171,18 @@ pub(crate) async fn ingest_document(
         .ingestor
         .ingest(&params.document_id, content_type, &body)
         .await
-        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+        .map_err(|r| match r {
+            // Only a document fault is described to the client; backend detail is
+            // logged in the ingestor, not surfaced.
+            IngestRejection::BadDocument(msg) => (StatusCode::BAD_REQUEST, msg),
+            IngestRejection::NotConfigured => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "document ingestion is not configured".into(),
+            ),
+            IngestRejection::Backend => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "ingestion failed".into())
+            }
+        })?;
     Ok(Json(Envelope {
         data: IngestResult {
             document_id: params.document_id,
