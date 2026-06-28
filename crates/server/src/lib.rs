@@ -9,6 +9,7 @@
 
 pub mod auth;
 pub mod fanout;
+pub mod http;
 pub mod postgres_store;
 pub mod quiz;
 pub mod redis_fanout;
@@ -18,7 +19,8 @@ pub mod ws;
 
 use std::sync::Arc;
 
-use axum::{Router, routing::get};
+use axum::Router;
+use axum::routing::{get, post};
 
 use auth::Auth;
 use fanout::{BroadcastFanout, Fanout};
@@ -53,7 +55,14 @@ impl AppState {
 /// Build the application router over shared state.
 pub fn app(state: AppState) -> Router {
     Router::new()
+        .route("/", get(http::index))
+        .route("/app.js", get(http::app_js))
         .route("/health", get(health))
+        .route("/sessions", post(http::create_session))
+        .route(
+            "/sessions/{session_id}/participants",
+            post(http::join_session),
+        )
         .route("/ws/{session_id}", get(ws::ws_handler))
         .with_state(state)
 }
