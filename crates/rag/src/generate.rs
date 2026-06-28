@@ -47,25 +47,34 @@ pub async fn generate_from_chunk(
     provider: &dyn AiProvider,
 ) -> Result<Question, GenError> {
     let user = format!("Source:\n{}", chunk.text);
-    let raw = provider.complete(SYSTEM, &user).await?;
-    let parsed: Generated = serde_json::from_str(extract_json(&raw))
-        .map_err(|e| GenError(format!("invalid generation JSON: {e}")))?;
-
-    if parsed.choices.len() < 2 {
-        return Err(GenError("a question needs at least two choices".into()));
+    // One retry: a model can emit malformed JSON transiently. A parse error
+    // retries; an out-of-range value is a definitive rejection (no retry).
+    let mut last_parse_error = String::from("no completion attempt");
+    for _ in 0..2 {
+        let raw = provider.complete_json(SYSTEM, &user).await?;
+        match serde_json::from_str::<Generated>(extract_json(&raw)) {
+            Ok(parsed) => {
+                if parsed.choices.len() < 2 {
+                    return Err(GenError("a question needs at least two choices".into()));
+                }
+                if usize::from(parsed.correct_choice) >= parsed.choices.len() {
+                    return Err(GenError("correct_choice index is out of range".into()));
+                }
+                return Ok(Question {
+                    id: format!("q:{}", chunk.source_section_id),
+                    text: parsed.text,
+                    choices: parsed.choices,
+                    correct_choice: parsed.correct_choice,
+                    source_section_ids: vec![chunk.source_section_id.clone()],
+                    timer_sec: 20,
+                });
+            }
+            Err(e) => last_parse_error = e.to_string(),
+        }
     }
-    if usize::from(parsed.correct_choice) >= parsed.choices.len() {
-        return Err(GenError("correct_choice index is out of range".into()));
-    }
-
-    Ok(Question {
-        id: format!("q:{}", chunk.source_section_id),
-        text: parsed.text,
-        choices: parsed.choices,
-        correct_choice: parsed.correct_choice,
-        source_section_ids: vec![chunk.source_section_id.clone()],
-        timer_sec: 20,
-    })
+    Err(GenError(format!(
+        "invalid generation JSON: {last_parse_error}"
+    )))
 }
 
 #[cfg(test)]
