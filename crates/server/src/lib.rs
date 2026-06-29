@@ -11,6 +11,7 @@ pub mod auth;
 pub mod authz;
 pub mod fanout;
 pub mod http;
+pub mod membership;
 pub mod oidc;
 pub mod postgres_store;
 pub mod quiz;
