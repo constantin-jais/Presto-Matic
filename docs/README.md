@@ -24,6 +24,17 @@ over it; SP-C consumes both). The evolution spec critiques the **built** product
 (P1–P3 + the four differentiators, already on `main`) and slots its hardening
 work _alongside_ the spec roadmap below.
 
+> **Implementation status (2026-06-29).** The `Status` column above is each
+> _spec document's_ status, not the code's. As of the `goal/moat-and-gatewall`
+> branch (CI-green, not yet merged): **SP-A inc-1/2** (OIDC validation,
+> space-scoped Biscuit tokens, anti-enumeration, MembershipStore + revocation
+> recheck) and **SP-B inc-1/3** (signed integrity hashes, signed PII verdict,
+> retrieval space/clearance scoping, live-generation gate) are **implemented and
+> tested**, plus the full evolution gate-wall (cargo-deny + cargo-audit +
+> guard-scan + coverage ≥ 80%). The §3 AI-latency SLOs and **SP-C (front)** remain
+> open. See [`status/2026-06-29-session-handoff.md`](status/2026-06-29-session-handoff.md)
+> for the verified KPI-by-KPI status and the SP-C Increment 1 plan.
+
 ## The unified increment spine (risk-first, wedge-first)
 
 The specs share one increment cadence. Each column is independently shippable and

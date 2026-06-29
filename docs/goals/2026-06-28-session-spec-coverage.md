@@ -8,6 +8,23 @@
 
 ---
 
+## Delivery status (2026-06-29, branch `goal/moat-and-gatewall`, CI-green, unmerged)
+
+| Section                  | State                        | Notes                                                                                                                    |
+| ------------------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **§1 moat**              | ✅ **19/19 proven**          | every KPI has a named green test; AI-gated ones (`live_rag`) proven locally                                              |
+| **§2 gate-wall**         | ✅ **complete, CI-enforced** | check · cargo-deny + cargo-audit · guard-scan · integration (coverage 91.75%)                                            |
+| **§3 SLOs (load test)**  | ✅ **met**                   | delivery 26ms · reveal 18ms · answer-submit 51ms (`load.rs`, 200 participants)                                           |
+| **§3 SLOs (AI latency)** | ⛔ **inference-bound**       | generation pipeline measured ~20s on the fastest loadable model; `< 5s` needs production inference (`slo_generation.rs`) |
+| **§4 compliance**        | ◻️ not started               | audit 0-PII, RGPD erasure, A11y, cross-browser e2e                                                                       |
+| **§5 / SP-C front**      | ◻️ next                      | Inc-1 plan in [`../status/2026-06-29-session-handoff.md`](../status/2026-06-29-session-handoff.md)                       |
+
+The **minimal session goal** below (moat §1 + §2 + the §3 SLOs) is met but for the
+AI-latency subset of §3, which is hardware-bound. Full "Done" additionally needs
+production inference + SP-C + the §4 compliance surface.
+
+---
+
 ## 1. Functional KPIs by session stage (moat first)
 
 | Stage (spec)                     | KPI                                                                       | Target          | Source                 |
