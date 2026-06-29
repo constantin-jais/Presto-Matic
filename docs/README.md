@@ -12,6 +12,7 @@ invariants, and an explicit cross-spec ledger.
 | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------- |
 | [`adr/0001-product-architecture-and-boundaries.md`](adr/0001-product-architecture-and-boundaries.md)                       | Product architecture, bricks (P1…P4, Client), the one-way dependency invariant    | Accepted  |
 | [`adr/0002-mobile-first-webview-rust-core.md`](adr/0002-mobile-first-webview-rust-core.md)                                 | Mobile-first WebView/PWA path with Rust-core portability contract                 | Accepted  |
+| [`adr/0003-companion-repositories.md`](adr/0003-companion-repositories.md)                                                   | Companion repos for adjacent sovereign tooling (ingestion, SQL audit, memory, supply-chain) | Accepted  |
 | [`specs/2026-06-27-presto-matic-design.md`](specs/2026-06-27-presto-matic-design.md)                                       | The product design (wedge, differentiators, live protocol, sovereignty)           | Proposed  |
 | [`specs/2026-06-28-collaborative-spaces-authz-design.md`](specs/2026-06-28-collaborative-spaces-authz-design.md)           | **SP-A** — authorization substrate (OIDC, spaces, membership, Biscuit caps)       | Proposed  |
 | [`specs/2026-06-28-signed-classification-clearance-design.md`](specs/2026-06-28-signed-classification-clearance-design.md) | **SP-B** — signed classification (confidentiality / PII / integrity) + clearance  | Proposed  |
@@ -60,6 +61,7 @@ P0/P1) lands with Increment 1 and protects the product that already exists.
 - **Biscuit emitter discipline.** Sole emitter, Ed25519 key shared across instances, injected-clock minting, authorizer policies, `check if time < expiration` self-expiry, errors never carry the token. SP-A generalizes `session→space`; SP-B adds signed third-party blocks (classifier + ingestion keys, independent of the server's trust).
 - **Token transport.** Web/PWA: `HttpOnly; Secure; SameSite=Strict` cookie + `Sec-Fetch-Site` check. Tauri: `Authorization` header + OS secure store. The wasm client never reads the token.
 - **Sovereignty.** OSS licensing only (MIT/Apache/MPL family, enforced by the `deny.toml` + `cargo-audit` gates), EU residency, no US hyperscaler/gatekeeper, and no internal/proprietary-employer reference of any kind in any artifact (this is a clean-room sovereign OSS repo).
+- **Companion repos, not hidden runtime deps.** ADR-0003 splits adjacent tooling into `memory-card`, `disc-loader`, `vault-inspector`, and `supply-depot`. Presto-Matic integrates through stable contracts (HTTP/queue/object-store/CLI artifacts), never by depending on companion internals.
 
 ## Cross-spec coherence ledger (open items spanning specs)
 

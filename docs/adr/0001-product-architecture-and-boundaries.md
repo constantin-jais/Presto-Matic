@@ -4,6 +4,7 @@
 - Date: 2026-06-28
 - Supersedes: none (first ADR)
 - Related: docs/specs/2026-06-27-presto-matic-design.md, docs/plans/2026-06-27-p3-tracer-bullet.md, docs/specs/2026-06-28-collaborative-spaces-authz-design.md (SP-A), docs/specs/2026-06-28-signed-classification-clearance-design.md (SP-B), docs/specs/2026-06-28-frontend-dioxus-design-system-design.md (SP-C)
+- Amended by: docs/adr/0003-companion-repositories.md (adjacent tooling/infrastructure repos; core product monorepo invariant preserved)
 
 ## Context
 
@@ -178,15 +179,17 @@ transverse contract. Low priority vs the P1/P2 split — fold in if convenient, 
   lines is ceremony.
 - **one-crate-per-brick for the backend:** rejected at ~4k lines. Bricks stay module-level where the
   seam is weak; crate-level only where it is strong (P1/P2, and the Client which is a separate surface).
-- **multi-repo today:** rejected. No governance boundary is live. The harness can consume any brick via a
-  git-dependency to the sub-crate (`package = "presto-rag", tag = "..."`) — no split required.
+- **multi-repo for core product bricks:** still rejected. No core Presto-Matic governance boundary is live.
+  Companion repos for adjacent tooling/infrastructure are accepted by ADR-0003 because their governance,
+  dependency, and release boundaries are already different from the product repo.
 
 ## Deferred decision — open-core governance line
 
 If a partial-OSS model is later chosen, the visibility line would put the engine
 ({`presto-core` content, `presto-rag`, `presto-studio`}) public and the product (`presto-server` + live
 protocol, plus the Client) private — and only _that_ (different git visibility) would force a second
-repo. Not decided here. Until then, the monorepo keeps the option open at near-zero cost.
+repo. Not decided here. Until then, the Presto-Matic product monorepo keeps the option open at near-zero cost;
+ADR-0003 companion repos do not change the core product visibility line.
 
 ## Goals & invariants for the feature agent (actionable now, no refactor required)
 
@@ -215,4 +218,4 @@ server adapters to call `presto-studio`; keep one workspace-wide CI run green.
   done on green.
 - The Client is a first-class brick sharing only the `presto-core` contract — UI work and backend work
   cannot tangle by construction.
-- No premature multi-repo or over-splitting cost is paid now.
+- No premature multi-repo split is paid for core product bricks; adjacent tooling/infrastructure uses the companion-repo model from ADR-0003.
