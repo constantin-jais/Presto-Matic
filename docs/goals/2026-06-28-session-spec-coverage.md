@@ -37,7 +37,7 @@
 - `cargo build --workspace --all-targets` = **0 errors** · `clippy -D warnings` = **0 warnings** · `fmt --check` = clean
 - `cargo test --workspace` = **100% pass** ; line coverage **≥ 80%** (CI-blocking)
 - **`cargo-deny`** (licenses MIT/Apache/MPL only) + **`cargo-audit`** (0 vulns) = pass [evolution Sec2]
-- **0** machine-local paths · **0** Doxallia reference · **0** secret in the diff (guard scan)
+- **0** machine-local paths · **0** internal/proprietary-employer reference · **0** secret in the diff (guard scan)
 - Real-infra gated tests green: Postgres multi-instance, Redis multi-instance, **`live_rag`** (real provider)
 
 ## 3. Observability KPIs (measured, with SLO)

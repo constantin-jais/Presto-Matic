@@ -47,7 +47,7 @@ P0/P1) lands with Increment 1 and protects the product that already exists.
 - **Token-is-not-a-cache.** The Biscuit encodes a capability minted _at access_ from OIDC identity + DB membership; Postgres stays the authority on _current_ membership (the basis of immediate revocation via the fanout-invalidated recheck cache).
 - **Biscuit emitter discipline.** Sole emitter, Ed25519 key shared across instances, injected-clock minting, authorizer policies, `check if time < expiration` self-expiry, errors never carry the token. SP-A generalizes `session→space`; SP-B adds signed third-party blocks (classifier + ingestion keys, independent of the server's trust).
 - **Token transport.** Web/PWA: `HttpOnly; Secure; SameSite=Strict` cookie + `Sec-Fetch-Site` check. Tauri: `Authorization` header + OS secure store. The wasm client never reads the token.
-- **Sovereignty.** OSS licensing only (MIT/Apache/MPL — to be enforced by the evolution `deny.toml` gate), EU residency, no US hyperscaler/gatekeeper, no Doxallia reference in any artifact.
+- **Sovereignty.** OSS licensing only (MIT/Apache/MPL — to be enforced by the evolution `deny.toml` gate), EU residency, no US hyperscaler/gatekeeper, and no internal/proprietary-employer reference of any kind in any artifact (this is a clean-room sovereign OSS repo).
 
 ## Cross-spec coherence ledger (open items spanning specs)
 

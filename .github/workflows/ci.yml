@@ -34,6 +34,30 @@ jobs:
         with:
           command: check
 
+  guard:
+    # Evolution gate: nothing machine-local, no internal/proprietary-employer
+    # reference, and no committed secret files leak into this sovereign OSS repo.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No machine-local home paths
+        run: |
+          if git grep -nIE '/Users/[a-z]|/home/[a-z]+/(dev|[.]claude)' -- . ; then
+            echo "::error::machine-local path committed"; exit 1
+          fi
+      - name: No forbidden internal/proprietary reference
+        # The needle is assembled from fragments so this gate never matches itself.
+        run: |
+          forbidden="dox""allia"
+          if git grep -niE "$forbidden" -- . ; then
+            echo "::error::forbidden internal/proprietary reference committed"; exit 1
+          fi
+      - name: No committed secret files
+        run: |
+          if git ls-files | grep -iE '[.](env|pem|key|p12)$' ; then
+            echo "::error::secret file committed"; exit 1
+          fi
+
   integration:
     # Real-infra gated tests against live Postgres (pgvector) + Redis service
     # containers — the multi-instance, store-divergence, and corpus tests that the
