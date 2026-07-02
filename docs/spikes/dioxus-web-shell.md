@@ -179,7 +179,7 @@ I did not build a Leptos spike (it lives in feed-mind, a different repo under D7
 
 ## Appendix: Files
 
-- **Spike code:** `/Users/ifi6567/Documents/rumble-lm/crates/ui/examples/spike_web.rs`
+- **Spike code:** `crates/ui/examples/spike_web.rs`
 - **Tests:** 8 passing unit tests (data consistency, SSR rendering).
 - **Build proof:**
   - Native: `cargo test --example spike_web` ✓
